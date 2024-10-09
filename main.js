@@ -1,8 +1,8 @@
 import { createAppKit } from '@reown/appkit';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
-import { mainnet, arbitrum } from '@reown/appkit/networks';
+// import { mainnet, arbitrum } from '@reown/appkit/networks';
 import { ethers } from 'ethers';
-import {mrTokenABI} from "./mrTokenABI.js";
+// import {mrTokenABI} from "./mrTokenABI.js";
 import {marketplaceAbi} from "./ERC1155ABI.js";
 import {payableMRTokenABI} from "./PayableMRTokenABI.js";
 // 1. Get projectId from https://cloud.reown.com
@@ -37,6 +37,7 @@ const modal = createAppKit({
         analytics: true // Optional - defaults to your Cloud configuration
     },
     allowUnsupportedChain: true,
+
 });
 let provider, tokenContract;
 // const mrTokenAddress = '0xdaBD71a708a26Eb7a50f27765d6d30A4038c5EA8';  // Replace with your contract address
@@ -48,70 +49,6 @@ const abi = payableMRTokenABI;
 const ERC1155ABI = marketplaceAbi;
 // const ERC1155Address = "0x694cEDFFaf41E8a6e3590e6C1c2D47e762f97ab3";
 const ERC1155Address = "0x7DF5D6fbF15c71E3C96b8C40495bc3b6B99A4bce"
-
-async function getBalance(account) {
-    try {
-        const balance = await tokenContract.balanceOf(account);
-        console.log('User balance:', ethers.formatUnits(balance, 18));  // Assuming the token has 18 decimals
-    } catch (error) {
-        console.error('Error fetching balance:', error);
-    }
-}
-
-async function requestTokens(account, numberOfTokens) {
-    try {
-        // Initialize contract instance
-        const tokenContract = new ethers.Contract(mrTokenAddress, abi, provider);
-
-        // Ensure signer is available from provider
-        const signer = await provider.getSigner();
-        console.log("Signer", signer);
-
-        // Connect contract to the signer
-        const tokenWithSigner = tokenContract.connect(signer);
-
-        // Get the current price of the token (in Wei)
-        const tokenPrice = await tokenWithSigner.getTokenPrice();
-        console.log("Current token price (Wei):", tokenPrice.toString());
-
-        // Convert numberOfTokens to BigNumber (with 18 decimals)
-        const amountInTokens = ethers.toBigInt(ethers.parseUnits(numberOfTokens.toString(), 18));
-        console.log("Amount in Tokens:", amountInTokens.toString());
-
-        // Convert tokenPrice to BigInt and calculate the required payment in Wei
-        const requiredPayment = tokenPrice * BigInt(numberOfTokens);
-        console.log("Required payment (Wei):", requiredPayment.toString());
-
-        // Mint the tokens by sending the required amount of Ether
-        const tx = await tokenWithSigner.mint(account, amountInTokens, {
-            value: requiredPayment.toString()  // Send the calculated Ether amount
-        });
-        console.log('Minting transaction sent:', tx.hash);
-
-        // Wait for transaction confirmation
-        await tx.wait();
-        console.log('Transaction confirmed:', tx.hash);
-    } catch (error) {
-        console.error('Error during token request:', error);
-    }
-}
-
-
-
-// 2. Create your application's metadata object
-
-
-// Function to handle user connection and capture address
-async function connectUser() {
-    try {
-        // Open the wallet connection modal
-        await modal.open();
-    } catch (error) {
-        console.error('Failed to connect user:', error);
-    }
-}
-
-
 
 
 // Call the connectUser function on button click or other event
@@ -134,8 +71,19 @@ getAllNFTs.addEventListener('click', getAvailableNFTs);
 //     // await modal.open({});
 // }
 
-
-
+// Function to handle user connection and capture address
+async function connectUser() {
+    try {
+        console.log("Running connect")
+        // Open the wallet connection modal
+        await modal.open();
+    } catch (error) {
+        console.error('Failed to connect user:', error);
+    }
+}
+if(modal.getAddress()){
+    console.log("Got address", modal.getAddress());
+}
 
 async function showAccount() {
     try {
@@ -143,6 +91,7 @@ async function showAccount() {
         await modal.open({ view: 'Account' });
 
         const address = modal.getAddress();
+        console.log("got ADRESS ")
         const walletProvider = await modal.getWalletProvider();
         provider = new ethers.BrowserProvider(walletProvider);  // ethers v6.x
 
@@ -160,6 +109,16 @@ async function showAccount() {
 }
 
 
+async function getBalance(account) {
+    try {
+        const balance = await tokenContract.balanceOf(account);
+        console.log("User balance", balance.toString());
+        console.log('User balance:', ethers.formatUnits(balance, 18));  // Assuming the token has 18 decimals
+    } catch (error) {
+        console.error('Error fetching balance:', error);
+    }
+}
+
 
 async function getYourNFTs() {
     const walletProvider = await modal.getWalletProvider();
@@ -169,28 +128,6 @@ async function getYourNFTs() {
     await getNFTImages(signer)
 }
 
-
-async function getTokens() {
-    try {
-        const address = await modal.getAddress();
-        if (address) {
-            console.log('Requesting 1 MR Tokens for address:', address);
-
-            // Ensure the walletProvider is available
-            const walletProvider = await modal.getWalletProvider();
-            provider = new ethers.BrowserProvider(walletProvider);  // ethers v6.x
-            const signer = await provider.getSigner();
-            console.log("Signer", signer);
-
-            // Interact with the contract using the provider and mint tokens
-            await requestTokens(address, 2);
-        } else {
-            console.error('No wallet address found. Please connect your wallet.');
-        }
-    } catch (error) {
-        console.error('Error getting tokens:', error);
-    }
-}
 
 async function getNFTImages(signer) {
     const ERC1155Contract = new ethers.Contract(ERC1155Address, ERC1155ABI, signer);
@@ -232,6 +169,91 @@ async function getNFTImages(signer) {
     }
 }
 
+
+async function getTokens() {
+    try {
+        const address = await modal.getAddress();
+        if (address) {
+            console.log('Requesting 1 MR Tokens for address:', address);
+
+            // Ensure the walletProvider is available
+            const walletProvider = await modal.getWalletProvider();
+            provider = new ethers.BrowserProvider(walletProvider);  // ethers v6.x
+            const signer = await provider.getSigner();
+            console.log("Signer", signer);
+
+            // Interact with the contract using the provider and mint tokens
+            await requestTokens(address, 2);
+        } else {
+            console.error('No wallet address found. Please connect your wallet.');
+        }
+    } catch (error) {
+        console.error('Error getting tokens:', error);
+    }
+}
+
+
+async function requestTokens(account, numberOfTokens) {
+    try {
+        // Initialize contract instance
+        const tokenContract = new ethers.Contract(mrTokenAddress, abi, provider);
+
+        // Ensure signer is available from provider
+        const signer = await provider.getSigner();
+        console.log("Signer", signer);
+
+        // Connect contract to the signer
+        const tokenWithSigner = tokenContract.connect(signer);
+
+        // Get the current price of the token (in Wei)
+        const tokenPrice = await tokenWithSigner.getTokenPrice();
+        console.log("Current token price (Wei):", tokenPrice.toString());
+
+        // Convert numberOfTokens to BigNumber (with 18 decimals)
+        const amountInTokens = ethers.toBigInt(ethers.parseUnits(numberOfTokens.toString(), 18));
+        console.log("Amount in Tokens:", amountInTokens.toString());
+
+        // Convert tokenPrice to BigInt and calculate the required payment in Wei
+        const requiredPayment = tokenPrice * BigInt(numberOfTokens);
+        console.log("Required payment (Wei):", requiredPayment.toString());
+
+        // const userBalance = await signer.getBalance(); // Get user's ETH balance in Wei
+        // console.log("signer and user balance",signer, userBalance.toString());
+        // if (userBalance < requiredPayment) {
+        //     alert("You do not have enough balance to complete this transaction.");
+        //     return;
+        // }
+
+        // Mint the tokens by sending the required amount of Ether
+        const tx = await tokenWithSigner.mint(account, amountInTokens, {
+            value: requiredPayment.toString()  // Send the calculated Ether amount
+        });
+        console.log('Minting transaction sent:', tx.hash);
+
+        // Wait for transaction confirmation
+        await tx.wait();
+        console.log('Transaction confirmed:', tx.hash);
+    } catch (error) {
+        if (error.code === 4001) {
+            // Error code 4001 indicates user rejected the transaction in their wallet (e.g., MetaMask)
+            console.error('Transaction rejected by user:', error);
+            alert('Transaction was rejected by the user.');
+        } else if (error.message.includes('user disconnected')) {
+            // Handle user disconnection case (frontend-specific event listener should handle this)
+            console.error('User got disconnected from the dApp:', error);
+            alert('You were disconnected from the dApp before the transaction could complete.');
+        } else if (error.message.includes('insufficient funds')) {
+            console.error('Insufficient funds', error);
+            alert('You do not have enough funds to buy')
+        }
+        else {
+            // Handle generic errors
+            console.error('Error during token request:', error);
+            alert('An error occurred during the transaction. Please try again.');
+        }
+
+    }
+}
 
 
 async function getAvailableNFTs() {
@@ -293,46 +315,106 @@ async function getAvailableNFTs() {
     }
 }
 
+
 async function buyNFT(signer, tokenId, amount, costInMR) {
     const ERC1155Contract = new ethers.Contract(ERC1155Address, ERC1155ABI, signer);
     const NFTwithSigner = ERC1155Contract.connect(signer);
+
     try {
         // Get the buyer's address
         const buyerAddress = await signer.getAddress();
+        console.log("buyerAddress", buyerAddress)
 
         // Approve the contract to spend MR tokens if necessary
         const mrTokenContract = new ethers.Contract(mrTokenAddress, abi, signer);
         const mrTokenwithSigner = mrTokenContract.connect(signer);
         const allowance = await mrTokenwithSigner.allowance(buyerAddress, ERC1155Address);
 
+        console.log("Allowance:", allowance.toString());
+        console.log("Cost in MR:", costInMR.toString());
 
-        console.log("allowance", typeof allowance)
-        console.log("Cost", typeof costInMR);
+        if (allowance < costInMR) {
+            console.log("Allowance low, approving more MR tokens...");
 
-        if (allowance <= costInMR) {
-            console.log("Allowance low, approving...")
-            const txData = await mrTokenwithSigner.approve(ERC1155Address, costInMR).populateTransaction;
-
-            // Estimate gas using the populated transaction
-            const estimatedGas = await signer.provider.estimateGas({
-                ...txData,
-                from: buyerAddress, // Specify the sender explicitly
-            });
-
-
-            const approveTx = await mrTokenwithSigner.approve(ERC1155Address, costInMR, {gasLimit: estimatedGas});
-            await approveTx.wait();  // Wait for the transaction to be mined
+            try {
+                // Estimate gas for the approval transaction
+                const approveTx = await mrTokenwithSigner.approve(ERC1155Address, costInMR);
+                const estimatedGas = await approveTx.estimateGas();
+                const approveTxFinal = await mrTokenwithSigner.approve(ERC1155Address, costInMR, {
+                    gasLimit: estimatedGas
+                });
+                await approveTxFinal.wait();  // Wait for the approval transaction to be confirmed
+                console.log('Approval successful!');
+            } catch (error) {
+                if (error.code === 'INSUFFICIENT_FUNDS') {
+                    console.error('Insufficient MR tokens to approve:', error);
+                    alert('You do not have enough MR tokens to proceed.');
+                    return;
+                } else if (error.code === 4001) {
+                    // User rejected the approval transaction
+                    console.error('Approval transaction rejected by user:', error);
+                    alert('You rejected the approval transaction.');
+                    return;
+                } else if (error.message.includes('user rejected')) {
+                    console.log("User rejected approval from the app", error);
+                    alert("User rejected approval from the app")
+                } else  {
+                    console.error('Error approving MR tokens:', error);
+                    alert('An error occurred while approving MR tokens.');
+                    return;
+                }
+            }
         }
-            console.log(buyerAddress, tokenId, amount, costInMR.toString())
-            // Populate the transaction
-            const txData = await NFTwithSigner.BuyNFTs(buyerAddress, tokenId, amount, costInMR);
-            await txData.wait();
 
-            console.log(`NFT bought! Transaction Hash: ${txData.hash}`);
+        console.log(`Proceeding to buy NFT with Token ID ${tokenId}, Amount ${amount}, Cost in MR ${costInMR.toString()}`);
+
+        // Buy the NFT after approval
+        try {
+            const buyTx = await NFTwithSigner.BuyNFTs(buyerAddress, tokenId, amount, costInMR);
+            await buyTx.wait();  // Wait for the transaction to be mined
+            console.log(`NFT bought successfully! Transaction Hash: ${buyTx.hash}`);
+            alert('NFT purchase successful!');
+        } catch (error) {
+            if (error.code === 'INSUFFICIENT_FUNDS') {
+                console.error('Insufficient MR tokens for the purchase:', error);
+                alert('You do not have enough MR tokens to purchase the NFT.');
+            } else if (error.code === 4001) {
+                // User rejected the buy transaction
+                console.error('Transaction rejected by user:', error);
+                alert('You rejected the NFT purchase.');
+            } else if (error.message.includes('gas')) {
+                // Handle gas estimation issues
+                console.error('Error with gas estimation:', error);
+                alert('There was an issue estimating gas for the transaction.');
+            } else {
+                console.error('Error buying NFT:', error);
+                alert('An error occurred while purchasing the NFT. Please try again.');
+            }
+        }
+
     } catch (error) {
-        console.error(`Error buying NFT Token ID ${tokenId}:`, error);
+        // Handle unexpected errors
+        console.error(`Unexpected error buying NFT with Token ID ${tokenId}:`, error);
+        alert('An unexpected error occurred. Please try again.');
     }
 }
+
+// Frontend disconnection handling (Example for MetaMask)
+if (window.ethereum) {
+    window.ethereum.on('disconnect', () => {
+        alert('You have been disconnected from the dApp.');
+    });
+
+    window.ethereum.on('accountsChanged', (accounts) => {
+        if (accounts.length === 0) {
+            alert('No accounts found. Please connect to the dApp.');
+        } else {
+            console.log('Account changed:', accounts[0]);
+        }
+    });
+}
+
+
 
 function convertIPFSToHTTP(ipfsUrl) {
     return ipfsUrl.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/");
