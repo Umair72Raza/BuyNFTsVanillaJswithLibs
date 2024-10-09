@@ -98,6 +98,9 @@ async function requestTokens(account, numberOfTokens) {
 
 
 
+// 2. Create your application's metadata object
+
+
 // Function to handle user connection and capture address
 async function connectUser() {
     try {
@@ -116,17 +119,22 @@ document.querySelector('w3m-button').addEventListener('click', connectUser);
 
 // const getNFTsButton = document.getElementById("get-NFTs");
 
-// const showAccountButton = document.getElementById("show-Account")
-// showAccountButton.addEventListener('click', showAccount);
+const showAccountButton = document.getElementById("show-Account")
+showAccountButton.addEventListener('click', showAccount);
 
 const getTokenButton = document.getElementById("get-MR-Tokens");
 getTokenButton.addEventListener('click', getTokens);
 
 const getMyNFTs = document.getElementById("get-my-nfts");
 getMyNFTs.addEventListener("click", getYourNFTs);
-
 const getAllNFTs =document.getElementById("get-NFTs")
 getAllNFTs.addEventListener('click', getAvailableNFTs);
+// if (modal) {
+//     console.log('Modal loaded', modal);
+//     // await modal.open({});
+// }
+
+
 
 
 async function showAccount() {
