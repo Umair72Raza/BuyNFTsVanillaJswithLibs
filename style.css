@@ -62,6 +62,10 @@ h1 {
 .read-the-docs {
   color: #888;
 }
+[data-testid="wui-input-text"] {
+  display: none !important;
+}
+
 
 button {
   border-radius: 8px;

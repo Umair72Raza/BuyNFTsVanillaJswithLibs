@@ -1,6 +1,6 @@
 import { createAppKit } from '@reown/appkit';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
-// import { mainnet, arbitrum } from '@reown/appkit/networks';
+import {mainnet, arbitrum, sepolia} from '@reown/appkit/networks';
 import { ethers } from 'ethers';
 // import {mrTokenABI} from "./mrTokenABI.js";
 import {marketplaceAbi} from "./ERC1155ABI.js";
@@ -30,15 +30,31 @@ const polygonAmoyTestnet = {
 // 3. Create a AppKit instance
 const modal = createAppKit({
     adapters: [new EthersAdapter()],
-    networks: [polygonAmoyTestnet],
+    networks: [ polygonAmoyTestnet],
     metadata,
     projectId,
-    features: {
-        analytics: true // Optional - defaults to your Cloud configuration
-    },
     allowUnsupportedChain: true,
-
+    features: {
+        email: false, // default to true
+        socials: [],
+        emailShowWallets: true, // default to true
+    },
 });
+
+document.getElementById("check").addEventListener("click", async()=>{
+    const walletProvider = await modal.getWalletProvider();
+    console.log(walletProvider);
+    provider = new ethers.BrowserProvider(walletProvider);  // ethers v6.x
+    const signer = await provider.getSigner();
+    console.log(signer);
+    console.log(modal.getChainId())
+    console.log(modal.getAddress())
+
+})
+
+const event = modal.getEvent()
+console.log(event)
+
 let provider, tokenContract;
 // const mrTokenAddress = '0xdaBD71a708a26Eb7a50f27765d6d30A4038c5EA8';  // Replace with your contract address
 // const mrTokenAddress = '0x14eaf364D2aB3cd043Ba1CAeD2ACb0Eb459f475E'; // payable with ethers
@@ -51,13 +67,63 @@ const ERC1155ABI = marketplaceAbi;
 const ERC1155Address = "0x7DF5D6fbF15c71E3C96b8C40495bc3b6B99A4bce"
 
 
-// Call the connectUser function on button click or other event
-document.querySelector('w3m-button').addEventListener('click', connectUser);
+// document.getElementById("switch-network").addEventListener('click', async() =>
+// {
+//     console.log(modal.getAddress());
+//     console.log(modal.getChainId())
+//     // await modal.switchNetwork(polygonAmoyTestnet)
+//     const address = modal.getAddress();
+//     console.log("got ADRESS ", address)
+//     const event = modal.getEvent()
+//     console.log(event)
+//     const walletProvider = await modal.getWalletProvider();
+//     provider = new ethers.BrowserProvider(walletProvider);
+//
+//     const walletProviderType = modal.getWalletProviderType()
+//     console.log("walletProvider", walletProvider, walletProviderType)
+//     const network = await provider.getNetwork();
+//     console.log("network", network.chainId);
+//     console.log("ethers.toBeHex(polygonAmoyTestnet.chainId)",ethers.toBeHex(polygonAmoyTestnet.chainId))
+//
+//     if (80002 != network.chainId.toString()) {
+//         try {
+//             // Try switching to the desired network
+//             console.log("switch network");
+//             await modal.switchNetwork(polygonAmoyTestnet)
+//         } catch (switchError) {
+//             console.log("switchError", switchError);
+//             // If the network is not added, request the user to add it
+//             if (switchError.code === 4902) {
+//                 try {
+//                     console.log("adding in the meta mask")
+//                     await provider.send("wallet_addEthereumChain", [{
+//                         chainId: ethers.toBeHex(80002),
+//                         chainName: 'Polygon Amoy Testnet',
+//                         nativeCurrency: {
+//                             name: 'MATIC',
+//                             symbol: 'MATIC',
+//                             decimals: 18
+//                         },
+//                         rpcUrls: ['https://rpc-amoy.polygon.technology'],
+//                         blockExplorerUrls: ['https://www.oklink.com/amoy']
+//                     }]);
+//                 } catch (addError) {
+//                     console.error('Failed to add network', addError);
+//                 }
+//             }
+//         }
+//     }
+//
+// })
+
 
 // const getNFTsButton = document.getElementById("get-NFTs");
 
 const showAccountButton = document.getElementById("show-Account")
-showAccountButton.addEventListener('click', showAccount);
+showAccountButton.addEventListener('click',
+    // checkAccount
+    checker
+);
 
 const getTokenButton = document.getElementById("get-MR-Tokens");
 getTokenButton.addEventListener('click', getTokens);
@@ -66,43 +132,42 @@ const getMyNFTs = document.getElementById("get-my-nfts");
 getMyNFTs.addEventListener("click", getYourNFTs);
 const getAllNFTs =document.getElementById("get-NFTs")
 getAllNFTs.addEventListener('click', getAvailableNFTs);
-// if (modal) {
-//     console.log('Modal loaded', modal);
-//     // await modal.open({});
-// }
 
 // Function to handle user connection and capture address
 async function connectUser() {
     try {
+        // await modal.switchNetwork(sepolia)
         console.log("Running connect")
+        const walletProvider = await modal.getWalletProvider();
+        provider = new ethers.BrowserProvider(walletProvider);  // ethers v6.x
+        const signer = await provider.getSigner();
+        console.log("Connected", signer);
         // Open the wallet connection modal
-        await modal.open();
+        // await modal.open();
+
     } catch (error) {
         console.error('Failed to connect user:', error);
     }
 }
-if(modal.getAddress()){
-    console.log("Got address", modal.getAddress());
-}
 
-async function showAccount() {
+async function checkAccount() {
     try {
         console.log('Showing account...');
         await modal.open({ view: 'Account' });
 
         const address = modal.getAddress();
-        console.log("got ADRESS ")
+        console.log("got ADRESS ", address)
         const walletProvider = await modal.getWalletProvider();
         provider = new ethers.BrowserProvider(walletProvider);  // ethers v6.x
+        console.log("Accounts", provider.getAccounts());
+        const signer = await provider.getSigner();
 
         // Initialize contract
-        tokenContract = new ethers.Contract(mrTokenAddress, abi, provider);
+        tokenContract = await new ethers.Contract(mrTokenAddress, abi, provider);
 
         await getBalance(address);
         console.log('User address:', address);
 
-        const chainId = await modal.getChainId();
-        console.log("Chain ID:", chainId);
     } catch (error) {
         console.error('Error showing account:', error);
     }
@@ -120,12 +185,38 @@ async function getBalance(account) {
 }
 
 
-async function getYourNFTs() {
+async function checker(){
     const walletProvider = await modal.getWalletProvider();
     provider = new ethers.BrowserProvider(walletProvider);  // ethers v6.x
     const signer = await provider.getSigner();
+    console.log(modal.getAddress(), modal.getChainId())
     console.log("Signer", signer);
-    await getNFTImages(signer)
+    const address= modal.getAddress();
+    const chainId = modal.getChainId();
+    const {open, selectedNetworkId } = modal.getState()
+    console.log(open, selectedNetworkId);
+    return {provider, address, chainId, signer}
+}
+
+
+
+async function getYourNFTs() {
+        const {address, chainId, signer} = await checker()
+        if(address !== undefined && chainId === 80002) {
+            const network = await signer.provider.getNetwork();
+            console.log("network", network.chainId)
+            if (network.chainId != 80002) {
+                let confirmation = confirm(`Please disconnect and make sure to use Polygon Amoy Testnet while logging in. 
+\nIf you haven't added the Polygon Testnet in your wallet app, click 'OK' to visit the setup guide.`);
+                if (confirmation) {
+                    window.open('https://support.polygon.technology/support/solutions/articles/82000907114-how-to-add-amoy-network-in-your-wallet-', '_blank');
+                }
+                return
+            }
+            await getNFTImages(signer)
+        } else if(chainId !== 80002) {
+            alert("Please add the Polygon amoy Testnet");
+        }
 }
 
 
@@ -172,34 +263,31 @@ async function getNFTImages(signer) {
 
 async function getTokens() {
     try {
-        const address = await modal.getAddress();
-        if (address) {
-            console.log('Requesting 1 MR Tokens for address:', address);
-
-            // Ensure the walletProvider is available
-            const walletProvider = await modal.getWalletProvider();
-            provider = new ethers.BrowserProvider(walletProvider);  // ethers v6.x
-            const signer = await provider.getSigner();
-            console.log("Signer", signer);
-
-            // Interact with the contract using the provider and mint tokens
-            await requestTokens(address, 2);
-        } else {
-            console.error('No wallet address found. Please connect your wallet.');
+        const {address, signer} = await checker()
+        const network = await signer.provider.getNetwork();
+        console.log("network", network.chainId)
+        if (network.chainId != 80002) {
+            let confirmation = confirm(`Please disconnect and make sure to use Polygon Amoy Testnet while logging in. 
+\nIf you haven't added the Polygon Testnet in your wallet app, click 'OK' to visit the setup guide.`);
+            if (confirmation) {
+                window.open('https://support.polygon.technology/support/solutions/articles/82000907114-how-to-add-amoy-network-in-your-wallet-', '_blank');
+            }
+            return;
         }
+        await requestTokens(address, 1, signer);
     } catch (error) {
         console.error('Error getting tokens:', error);
     }
 }
 
 
-async function requestTokens(account, numberOfTokens) {
+async function requestTokens(account, numberOfTokens, signer) {
     try {
         // Initialize contract instance
         const tokenContract = new ethers.Contract(mrTokenAddress, abi, provider);
 
         // Ensure signer is available from provider
-        const signer = await provider.getSigner();
+        // const signer = await provider.getSigner();
         console.log("Signer", signer);
 
         // Connect contract to the signer
@@ -216,13 +304,6 @@ async function requestTokens(account, numberOfTokens) {
         // Convert tokenPrice to BigInt and calculate the required payment in Wei
         const requiredPayment = tokenPrice * BigInt(numberOfTokens);
         console.log("Required payment (Wei):", requiredPayment.toString());
-
-        // const userBalance = await signer.getBalance(); // Get user's ETH balance in Wei
-        // console.log("signer and user balance",signer, userBalance.toString());
-        // if (userBalance < requiredPayment) {
-        //     alert("You do not have enough balance to complete this transaction.");
-        //     return;
-        // }
 
         // Mint the tokens by sending the required amount of Ether
         const tx = await tokenWithSigner.mint(account, amountInTokens, {
@@ -257,14 +338,21 @@ async function requestTokens(account, numberOfTokens) {
 
 
 async function getAvailableNFTs() {
-    const walletProvider = await modal.getWalletProvider();
-    provider = new ethers.BrowserProvider(walletProvider);  // ethers v6.x
-    const signer = await provider.getSigner();
-    console.log("Signer", signer);
+    const {signer } = await checker()
     const ERC1155Contract = new ethers.Contract(ERC1155Address, ERC1155ABI, signer);
+    const network = await signer.provider.getNetwork();
+    console.log("network", network.chainId)
+    if (network.chainId != 80002)
+    {
+        let confirmation = confirm(`Please disconnect and make sure to use Polygon Amoy Testnet while logging in. 
+\nIf you haven't added the Polygon Testnet in your wallet app, click 'OK' to visit the setup guide.`);
+        if (confirmation) {
+            window.open('https://support.polygon.technology/support/solutions/articles/82000907114-how-to-add-amoy-network-in-your-wallet-', '_blank');
+        }
+        
+        return;
+    }
     const tokenIds = [1, 2, 3, 4, 5, 6, 7]; // List of token IDs to display
-
-    // Loop through each token ID
     for (const tokenId of tokenIds) {
         try {
             // Fetch metadata URI using the contract's uri function
@@ -310,6 +398,8 @@ async function getAvailableNFTs() {
             container.appendChild(buyButton);
 
         } catch (error) {
+
+
             console.error(`Error fetching data for Token ID ${tokenId}:`, error);
         }
     }
