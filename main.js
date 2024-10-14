@@ -58,66 +58,21 @@ console.log(event)
 let provider, tokenContract;
 // const mrTokenAddress = '0xdaBD71a708a26Eb7a50f27765d6d30A4038c5EA8';  // Replace with your contract address
 // const mrTokenAddress = '0x14eaf364D2aB3cd043Ba1CAeD2ACb0Eb459f475E'; // payable with ethers
-const mrTokenAddress = '0x9c6d990bB80d0c45DB714FB4Ba5Bf0BAdb531bAD';
+
+// const mrTokenAddress = '0x9c6d990bB80d0c45DB714FB4Ba5Bf0BAdb531bAD';
+const mrTokenAddress = "0x237A87B2c6e55cC0FAB2ec411016f23F1B50D7d3";
+
+
 // const abi = mrTokenABI;
 const abi = payableMRTokenABI;
 
 const ERC1155ABI = marketplaceAbi;
 // const ERC1155Address = "0x694cEDFFaf41E8a6e3590e6C1c2D47e762f97ab3";
-const ERC1155Address = "0x7DF5D6fbF15c71E3C96b8C40495bc3b6B99A4bce"
+
+// const ERC1155Address = "0x7DF5D6fbF15c71E3C96b8C40495bc3b6B99A4bce"
+const ERC1155Address = "0xe684659184584a1E46b054BdF7C6bAB543f558Bf"
 
 
-// document.getElementById("switch-network").addEventListener('click', async() =>
-// {
-//     console.log(modal.getAddress());
-//     console.log(modal.getChainId())
-//     // await modal.switchNetwork(polygonAmoyTestnet)
-//     const address = modal.getAddress();
-//     console.log("got ADRESS ", address)
-//     const event = modal.getEvent()
-//     console.log(event)
-//     const walletProvider = await modal.getWalletProvider();
-//     provider = new ethers.BrowserProvider(walletProvider);
-//
-//     const walletProviderType = modal.getWalletProviderType()
-//     console.log("walletProvider", walletProvider, walletProviderType)
-//     const network = await provider.getNetwork();
-//     console.log("network", network.chainId);
-//     console.log("ethers.toBeHex(polygonAmoyTestnet.chainId)",ethers.toBeHex(polygonAmoyTestnet.chainId))
-//
-//     if (80002 != network.chainId.toString()) {
-//         try {
-//             // Try switching to the desired network
-//             console.log("switch network");
-//             await modal.switchNetwork(polygonAmoyTestnet)
-//         } catch (switchError) {
-//             console.log("switchError", switchError);
-//             // If the network is not added, request the user to add it
-//             if (switchError.code === 4902) {
-//                 try {
-//                     console.log("adding in the meta mask")
-//                     await provider.send("wallet_addEthereumChain", [{
-//                         chainId: ethers.toBeHex(80002),
-//                         chainName: 'Polygon Amoy Testnet',
-//                         nativeCurrency: {
-//                             name: 'MATIC',
-//                             symbol: 'MATIC',
-//                             decimals: 18
-//                         },
-//                         rpcUrls: ['https://rpc-amoy.polygon.technology'],
-//                         blockExplorerUrls: ['https://www.oklink.com/amoy']
-//                     }]);
-//                 } catch (addError) {
-//                     console.error('Failed to add network', addError);
-//                 }
-//             }
-//         }
-//     }
-//
-// })
-
-
-// const getNFTsButton = document.getElementById("get-NFTs");
 
 const showAccountButton = document.getElementById("show-Account")
 showAccountButton.addEventListener('click',
@@ -314,6 +269,7 @@ async function requestTokens(account, numberOfTokens, signer) {
         // Wait for transaction confirmation
         await tx.wait();
         console.log('Transaction confirmed:', tx.hash);
+        alert('Transaction confirmed!')
     } catch (error) {
         if (error.code === 4001) {
             // Error code 4001 indicates user rejected the transaction in their wallet (e.g., MetaMask)
@@ -429,11 +385,12 @@ async function buyNFT(signer, tokenId, amount, costInMR) {
             try {
                 // Estimate gas for the approval transaction
                 const approveTx = await mrTokenwithSigner.approve(ERC1155Address, costInMR);
-                const estimatedGas = await approveTx.estimateGas();
-                const approveTxFinal = await mrTokenwithSigner.approve(ERC1155Address, costInMR, {
-                    gasLimit: estimatedGas
-                });
-                await approveTxFinal.wait();  // Wait for the approval transaction to be confirmed
+                // const estimatedGas = await approveTx.estimateGas();
+                // const approveTxFinal = await mrTokenwithSigner.approve(ERC1155Address, costInMR, {
+                //     gasLimit: estimatedGas
+                // });
+                // await approveTxFinal.wait();  // Wait for the approval transaction to be confirmed
+                await approveTx.wait();
                 console.log('Approval successful!');
             } catch (error) {
                 if (error.code === 'INSUFFICIENT_FUNDS') {
@@ -450,7 +407,7 @@ async function buyNFT(signer, tokenId, amount, costInMR) {
                     alert("User rejected approval from the app")
                 } else  {
                     console.error('Error approving MR tokens:', error);
-                    alert('An error occurred while approving MR tokens.');
+                    alert('An error occurred while approving MR tokens. Please try again!');
                     return;
                 }
             }
@@ -460,7 +417,7 @@ async function buyNFT(signer, tokenId, amount, costInMR) {
 
         // Buy the NFT after approval
         try {
-            const buyTx = await NFTwithSigner.BuyNFTs(buyerAddress, tokenId, amount, costInMR);
+            const buyTx = await NFTwithSigner.buyNFTs(buyerAddress, tokenId, amount, costInMR);
             await buyTx.wait();  // Wait for the transaction to be mined
             console.log(`NFT bought successfully! Transaction Hash: ${buyTx.hash}`);
             alert('NFT purchase successful!');
