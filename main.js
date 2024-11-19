@@ -88,6 +88,16 @@ getMyNFTs.addEventListener("click", getYourNFTs);
 const getAllNFTs =document.getElementById("get-NFTs")
 getAllNFTs.addEventListener('click', getAvailableNFTs);
 
+const w3mButtonInstance = document.getElementById("w3mbutton");
+const checkbutton = document.getElementById("checkbutton");
+
+checkbutton.addEventListener("click", async function (){
+    await modal.open();
+})
+
+
+
+
 // Function to handle user connection and capture address
 async function connectUser() {
     try {
